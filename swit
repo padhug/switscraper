@@ -1,0 +1,47 @@
+const puppeteer = require('puppeteer');
+
+url = 'https://www.switusa.com/product-page/bm-u275hdr';
+
+(async () =>{  
+  const browser = await puppeteer.launch({     
+  headless: false,
+  // slows down Puppeteer operations
+  slowMo: 500,
+  // open dev tools 
+  devtools: false,
+  innerHeight: 1050,
+  width: 1400
+  });
+  
+  const page = await browser.newPage();
+  await page.goto(url);
+  await page.waitForNavigation("[data-hook='product-title']")
+
+  data = await page.evaluate((page) => {
+    let name = document.querySelector("[data-hook='product-title']").textContent;
+    let categories = Array.from(document.querySelectorAll("[data-hook='breadcrumbs'] a"))
+                      .map((cat) => cat.text);
+    let sku = document.querySelector("[data-hook='sku']").textContent.replace(/SKU:\s/, '')
+    let price = document.querySelector("[data-hook='formatted-primary-price']").textContent;
+    let mountingOptions = Array.from(document.querySelectorAll('#dropdown-options-container_1 span'))
+                            .map((option) => option.outerText);
+    let image = document.querySelector('[data-hook=product-image]').src;
+    let description = document.querySelector('[data-hook=description] p:nth-of-type(3)').textContent
+    let features = Array.from(document.querySelectorAll('[data-hook=description] p:nth-of-type(n+5)')).map((p) => p.textContent)
+    let specSize = document.querySelector('[data-hook=info-section-description] table:nth-of-type(1) tr:nth-of-type(1) td:nth-of-type(1)').textContent.trim();
+    let specSizeValue = document.querySelector('[data-hook=info-section-description] table:nth-of-type(1) tr:nth-of-type(1) td:nth-of-type(2)').textContent.trim();
+    let specDisplayArea = document.querySelector('[data-hook=info-section-description] table:nth-of-type(1) tr:nth-of-type(2) td:nth-of-type(1)').textContent.trim();
+    let specDisplayAreaValue = document.querySelector('[data-hook=info-section-description] table:nth-of-type(1) tr:nth-of-type(2) td:nth-of-type(2)').textContent.trim();
+    let specifications = document.querySelector('[data-hook=info-section-description] table:nth-of-type(1)').textContent.trim()
+    let package = document.querySelector('[data-hook=collapse-info-item]:nth-of-type(2)').textContent;
+    let warranty = document.querySelector('[data-hook=collapse-info-item]:nth-of-type(3)').textContent
+    let manual = document.querySelector('[data-hook=collapse-info-item]:nth-of-type(4) a').href;
+
+    return { name, categories, sku, price, mountingOptions, image, description, features, 
+            "specification": { specSize : specSizeValue, specDisplayArea : specDisplayAreaValue },
+            specifications, package, warranty, manual
+    }
+  });
+
+  return JSON.stringify(data);
+});
